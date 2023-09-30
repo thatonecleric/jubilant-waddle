@@ -2,54 +2,85 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public CharacterController characterController;
-    public float runningSpeed = 5f;
-    public float walkingSpeed = 3f;
+    [Header("Walking Move Speed")]
+    public float walkingSpeed;
 
-    private float speed;
+    [Header("Running Move Speed")]
+    public float runningSpeed;
 
-    public float gravity = 9.87f;
-    private float verticalSpeed = 0;
-    private Vector3 yDirectionMove;
+    public float groundDrag;
+
+    private float moveSpeed;
+
+    [Header("Ground Check")]
+    public float playerHeight;
+    public LayerMask whatIsGround;
+    bool grounded;
+
+    public Transform orientation;
+
+    float horizontalInput;
+    float verticalInput;
+
+    Vector3 moveDirection;
+    Rigidbody rb;
 
     void Start()
     {
-        yDirectionMove = new Vector3(0, 0, 0);
-        speed = walkingSpeed;
+        rb = GetComponent<Rigidbody>();
+        rb.freezeRotation = true;
+        moveSpeed = walkingSpeed;
     }
 
-    // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        ProcessPlayerInput();
-        Move();
+        // ground check
+        grounded = Physics.Raycast(transform.position, Vector3.down, playerHeight * 0.5f + 0.2f, whatIsGround);
+
+        MyInput();
+        SpeedControl();
+
+        if (grounded)
+            rb.drag = groundDrag;
+        else
+            rb.drag = 0;
+
     }
 
-    void ProcessPlayerInput()
+    private void FixedUpdate()
     {
-        // Sprinting
-        if (Input.GetKeyDown(KeyCode.LeftShift))
+        MovePlayer();
+    }
+
+    void MyInput()
+    {
+        horizontalInput = Input.GetAxisRaw("Horizontal");
+        verticalInput = Input.GetAxisRaw("Vertical");
+
+        if (Input.GetKey(KeyCode.LeftShift))
         {
-            speed = runningSpeed;
+            moveSpeed = runningSpeed;
         }
         else if (Input.GetKeyUp(KeyCode.LeftShift))
         {
-            speed = walkingSpeed;
-        }
+            moveSpeed = walkingSpeed;
+        }    
     }
 
-    void Move()
+    private void MovePlayer()
     {
-        float horizontalMove = Input.GetAxis("Horizontal");
-        float verticalMove = Input.GetAxis("Vertical");
+        moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
+        rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
+    }
 
-        if (characterController.isGrounded) verticalSpeed = 0;
-        else
+    private void SpeedControl()
+    {
+        Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+
+        if (flatVel.magnitude > moveSpeed)
         {
-            verticalSpeed -= gravity * Time.deltaTime;
+            Vector3 limitedVel = flatVel.normalized * moveSpeed;
+            rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
         }
-        Vector3 move = (transform.forward * verticalMove) + (transform.right * horizontalMove);
-        yDirectionMove.y = verticalSpeed;
-        characterController.Move((speed * Time.deltaTime * move) + (yDirectionMove * Time.deltaTime));
     }
 }
