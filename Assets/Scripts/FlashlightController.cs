@@ -21,8 +21,6 @@ public class FlashlightController : MonoBehaviour
 
         if (isFlashlightOn)
             DrainBattery();
-
-        Debug.Log("Battery Remaining: " + remainingBattery);
     }
 
     void ProcessInput()
