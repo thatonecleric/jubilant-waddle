@@ -98,7 +98,7 @@ public class PlayerController : MonoBehaviour
 
     private void MaybePlayWalkingSound()
     {
-        bool isPlayerMoving = rb.velocity.x > 0.1f || rb.velocity.z > 0.1f;
+        bool isPlayerMoving = Mathf.Abs(rb.velocity.x) > 0.1f || Mathf.Abs(rb.velocity.z) > 0.1f;
         if (isPlayerMoving && !isPlayerSprinting && !walkingAudio.isPlaying)
             walkingAudio.Play();
         else if (isPlayerMoving && isPlayerSprinting && !runningAudio.isPlaying)
