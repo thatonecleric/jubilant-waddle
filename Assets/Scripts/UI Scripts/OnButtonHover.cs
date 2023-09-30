@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -37,9 +38,12 @@ public class OnButtonHover : MonoBehaviour
         currentlySelectedButton = text.text;
 
         // Unhighlight all other buttons.
+        buttons.RemoveWhere(s => s == null);
         foreach (GameObject obj in buttons)
         {
-            obj.GetComponent<OnButtonHover>().updateTextColorOnExit();
+            if (obj != null) {
+                obj.GetComponent<OnButtonHover>().updateTextColorOnExit();
+            }
         }
     }
 }
