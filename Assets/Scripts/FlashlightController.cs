@@ -5,17 +5,24 @@ using UnityEngine;
 public class FlashlightController : MonoBehaviour
 {
     public bool isFlashlightOn = false;
-
     private Light flashlight;
+
+    public float batteryDrainAmount = 0.2f;
+    public float remainingBattery = 10f;
 
     void Start()
     {
-        flashlight = GetComponent<Light>();    
+        flashlight = GetComponent<Light>();
     }
 
     void Update()
     {
         ProcessInput();
+
+        if (isFlashlightOn)
+            DrainBattery();
+
+        Debug.Log("Battery Remaining: " + remainingBattery);
     }
 
     void ProcessInput()
@@ -30,5 +37,10 @@ public class FlashlightController : MonoBehaviour
             isFlashlightOn = !isFlashlightOn;
             flashlight.enabled = isFlashlightOn;
         }
+    }
+
+    void DrainBattery()
+    {
+        remainingBattery -= batteryDrainAmount * Time.deltaTime;
     }
 }
