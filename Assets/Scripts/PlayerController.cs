@@ -2,22 +2,16 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    public Transform orientation;
+    
     [Header("Walking Move Speed")]
     public float walkingSpeed;
-
     [Header("Running Move Speed")]
     public float runningSpeed;
-
-    public float groundDrag;
-
     private float moveSpeed;
-
-    [Header("Ground Check")]
-    public float playerHeight;
-    public LayerMask whatIsGround;
-    bool grounded;
-
-    public Transform orientation;
+    public float groundDrag;
+    
+    private bool isPlayerSprinting = false;
 
     float horizontalInput;
     float verticalInput;
@@ -25,10 +19,21 @@ public class PlayerController : MonoBehaviour
     Vector3 moveDirection;
     Rigidbody rb;
 
+    [Header("Ground Check")]
+    public float playerHeight;
+    public LayerMask whatIsGround;
+    bool grounded;
+    
+
+    // SFXs
+    public AudioSource walkingAudio;
+    public AudioSource runningAudio;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
+
         moveSpeed = walkingSpeed;
     }
 
@@ -39,12 +44,9 @@ public class PlayerController : MonoBehaviour
 
         MyInput();
         SpeedControl();
+        MaybePlayWalkingSound();
 
-        if (grounded)
-            rb.drag = groundDrag;
-        else
-            rb.drag = 0;
-
+        rb.drag = grounded ? groundDrag : 0;
     }
 
     private void FixedUpdate()
@@ -60,11 +62,13 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKey(KeyCode.LeftShift))
         {
             moveSpeed = runningSpeed;
+            isPlayerSprinting = true;
         }
         else if (Input.GetKeyUp(KeyCode.LeftShift))
         {
             moveSpeed = walkingSpeed;
-        }    
+            isPlayerSprinting = false;
+        }
     }
 
     private void MovePlayer()
@@ -81,6 +85,24 @@ public class PlayerController : MonoBehaviour
         {
             Vector3 limitedVel = flatVel.normalized * moveSpeed;
             rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
+        }
+    }
+
+    private void MaybePlayWalkingSound()
+    {
+        bool isPlayerMoving = rb.velocity.x > 0.1f || rb.velocity.z > 0.1f;
+        if (isPlayerMoving && !isPlayerSprinting && !walkingAudio.isPlaying)
+            walkingAudio.Play();
+        else if (isPlayerMoving && isPlayerSprinting && !runningAudio.isPlaying)
+            runningAudio.Play();
+
+        if (!isPlayerMoving)
+        {
+            if (walkingAudio.isPlaying)
+                walkingAudio.Stop();
+
+            if (runningAudio.isPlaying)
+                runningAudio.Stop();
         }
     }
 }
