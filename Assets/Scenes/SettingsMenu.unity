@@ -646,12 +646,12 @@ RectTransform:
   - {fileID: 1350293133}
   - {fileID: 33631322}
   - {fileID: 629078744}
-  - {fileID: 373325295}
-  - {fileID: 2123105596}
-  - {fileID: 2094979954}
-  - {fileID: 1506067114}
   - {fileID: 513335138}
   - {fileID: 881901913}
+  - {fileID: 2094979954}
+  - {fileID: 1506067114}
+  - {fileID: 373325295}
+  - {fileID: 2123105596}
   - {fileID: 233170429}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -670,6 +670,7 @@ GameObject:
   m_Component:
   - component: {fileID: 373325295}
   - component: {fileID: 373325296}
+  - component: {fileID: 373325297}
   m_Layer: 5
   m_Name: Mouse Sensitivity Slider
   m_TagString: Untagged
@@ -745,11 +746,37 @@ MonoBehaviour:
   m_Direction: 0
   m_MinValue: 0
   m_MaxValue: 1
-  m_WholeNumbers: 0
+  m_WholeNumbers: 1
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 373325297}
+        m_TargetAssemblyTypeName: UpdateSettingsSlider, Assembly-CSharp
+        m_MethodName: OnValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &373325297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 373325294}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 359e3905cb9e046489de4314c9111048, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  assignment: 2
+  slider: {fileID: 373325296}
 --- !u!1 &513335137
 GameObject:
   m_ObjectHideFlags: 0
@@ -760,6 +787,7 @@ GameObject:
   m_Component:
   - component: {fileID: 513335138}
   - component: {fileID: 513335139}
+  - component: {fileID: 513335140}
   m_Layer: 5
   m_Name: BGM Slider
   m_TagString: Untagged
@@ -839,7 +867,80 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 513335140}
+        m_TargetAssemblyTypeName: UpdateSettingsSlider, Assembly-CSharp
+        m_MethodName: OnValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &513335140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 513335137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 359e3905cb9e046489de4314c9111048, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  assignment: 0
+  slider: {fileID: 513335139}
+--- !u!1 &556212310
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 556212312}
+  - component: {fileID: 556212311}
+  m_Layer: 0
+  m_Name: ValueMaster
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &556212311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 556212310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cda26246b4c05344d85303c080c1f6c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  bgmVolumeSlider: {fileID: 513335139}
+  sfxVolumeSlider: {fileID: 2094979955}
+  mouseSensitivitySlider: {fileID: 373325296}
+--- !u!4 &556212312
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 556212310}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 487.29614, y: 307.36267, z: -501.39865}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &579283865
 GameObject:
   m_ObjectHideFlags: 0
@@ -2264,6 +2365,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2094979954}
   - component: {fileID: 2094979955}
+  - component: {fileID: 2094979956}
   m_Layer: 5
   m_Name: SFX Slider
   m_TagString: Untagged
@@ -2343,7 +2445,33 @@ MonoBehaviour:
   m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2094979956}
+        m_TargetAssemblyTypeName: UpdateSettingsSlider, Assembly-CSharp
+        m_MethodName: OnValueChanged
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+--- !u!114 &2094979956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2094979953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 359e3905cb9e046489de4314c9111048, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  assignment: 1
+  slider: {fileID: 2094979955}
 --- !u!1 &2095393453
 GameObject:
   m_ObjectHideFlags: 0
@@ -2616,6 +2744,7 @@ CanvasRenderer:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 556212312}
   - {fileID: 1591465372}
   - {fileID: 370650434}
   - {fileID: 1079287241}
