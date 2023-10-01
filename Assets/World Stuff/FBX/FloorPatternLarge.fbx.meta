@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7e51c0b8039bffc4093fd00895264de0
+guid: aa16c1771f41c6e40a849a85b449aff4
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -7,8 +7,8 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Column
-    second: {fileID: 2100000, guid: 2e00e0b4d0536714d9fc6240086f12e9, type: 2}
+      name: Floor
+    second: {fileID: 2100000, guid: 3e241f9c2f1504f41925efb05aa2ad04, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -40,7 +40,7 @@ ModelImporter:
     isReadable: 0
   meshes:
     lODScreenPercentages: []
-    globalScale: 500
+    globalScale: 30
     meshCompression: 0
     addColliders: 0
     useSRGBMaterialColor: 1
@@ -95,7 +95,7 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 500
+    globalScale: 30
     rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0
