@@ -3,6 +3,8 @@ using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
+    public static PlayerController instance = null;
+
     public Transform orientation;
     
     [Header("Walking Move Speed")]
@@ -12,7 +14,8 @@ public class PlayerController : MonoBehaviour
     private float moveSpeed;
     public float groundDrag;
     
-    private bool isPlayerSprinting = false;
+    public bool isPlayerSprinting = false;
+    public bool isPlayerInWater = false;
 
     float horizontalInput;
     float verticalInput;
@@ -27,11 +30,12 @@ public class PlayerController : MonoBehaviour
     
 
     // SFXs
-    public AudioSource walkingAudio;
-    public AudioSource runningAudio;
+    //public AudioSource walkingAudio;
+    //public AudioSource runningAudio;
 
     void Start()
     {
+        instance = this;
         rb = GetComponent<Rigidbody>();
         rb.freezeRotation = true;
 
@@ -45,7 +49,7 @@ public class PlayerController : MonoBehaviour
 
         MyInput();
         SpeedControl();
-        MaybePlayWalkingSound();
+        //MaybePlayWalkingSound();
 
         rb.drag = grounded ? groundDrag : 0;
     }
@@ -65,7 +69,8 @@ public class PlayerController : MonoBehaviour
             moveSpeed = runningSpeed;
             isPlayerSprinting = true;
         }
-        else if (Input.GetKeyUp(KeyCode.LeftShift))
+
+        if (Input.GetKeyUp(KeyCode.LeftShift))
         {
             moveSpeed = walkingSpeed;
             isPlayerSprinting = false;
@@ -96,9 +101,27 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void MaybePlayWalkingSound()
+    private void OnTriggerEnter(Collider other)
     {
-        bool isPlayerMoving = Mathf.Abs(rb.velocity.x) > 0.1f || Mathf.Abs(rb.velocity.z) > 0.1f;
+        if (other.gameObject.layer == LayerMask.NameToLayer("Water"))
+        {
+            isPlayerInWater = true;
+            Debug.Log("Entered Water!");
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Water"))
+        {
+            isPlayerInWater = false;
+            Debug.Log("Exited Water!");
+        }
+    }
+
+    /*private void MaybePlayWalkingSound()
+    {
+        bool isPlayerMoving = Mathf.Abs(rb.velocity.x) > 0.01f || Mathf.Abs(rb.velocity.z) > 0.01f;
         if (isPlayerMoving && !isPlayerSprinting && !walkingAudio.isPlaying)
             walkingAudio.Play();
         else if (isPlayerMoving && isPlayerSprinting && !runningAudio.isPlaying)
@@ -112,5 +135,10 @@ public class PlayerController : MonoBehaviour
             if (runningAudio.isPlaying)
                 runningAudio.Stop();
         }
+    }*/
+
+    public Vector3 GetPlayerVelocity()
+    {
+        return rb.velocity;
     }
 }
