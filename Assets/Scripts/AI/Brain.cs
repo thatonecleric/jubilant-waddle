@@ -17,7 +17,6 @@ public class Brain : MonoBehaviour
 {
     public Camera playerCamera;
     public Transform player;
-    public MeshRenderer monsterRenderer;
     private NavMeshAgent monsterAgent;
 
     public GameObject enemyPatrol;
@@ -41,11 +40,8 @@ public class Brain : MonoBehaviour
     private bool paranoiaSet = false;
 
     private bool isRunningAwayFromPlayer = false;
-    private bool isFadingIntoWall = false;
-    private Coroutine fadeIntoWallCoroutine = null;
 
     private bool hasMonsterBeenSeenBefore = false;
-    private bool hasMonsterBeenSeenBefore2 = false;
 
     void Start()
     {
@@ -127,14 +123,7 @@ public class Brain : MonoBehaviour
             }
 
             if (monsterAgent.remainingDistance <= monsterAgent.stoppingDistance + 0.1f)
-                RunAwayFromPlayer();
-            return;
-        }
-
-        if (isFadingIntoWall)
-        {
-            if (fadeIntoWallCoroutine == null)
-                fadeIntoWallCoroutine = StartCoroutine(FadeOpacity());
+                RunAwayOrAttackPlayer();
             return;
         }
 
@@ -171,20 +160,10 @@ public class Brain : MonoBehaviour
             // Stop the monster
             monsterAgent.destination = transform.position;
 
-            RunAwayFromPlayer();
+            RunAwayOrAttackPlayer();
 
             // Transition to Paranoia Phase
             phase = Phase.Paranoia;
-            return;
-        }
-
-        if (isMonsterSeen && hasMonsterBeenSeenBefore && !isRunningAwayFromPlayer && !hasMonsterBeenSeenBefore2)
-        {
-            hasMonsterBeenSeenBefore2 = true;
-
-            // Play a loud violin noise, fade the monster into the wall.
-
-            isFadingIntoWall = true;
         }
     }
 
@@ -232,7 +211,7 @@ public class Brain : MonoBehaviour
     }
 
     // Navigate Monster to nearest patrol point which is out of sight from the player.
-    void RunAwayFromPlayer()
+    void RunAwayOrAttackPlayer()
     {
         // Make it sprint away
         monsterAgent.speed = 50f;
@@ -246,24 +225,6 @@ public class Brain : MonoBehaviour
         isRunningAwayFromPlayer = true;
 
         Debug.Log("Running Away.");
-    }
-
-    IEnumerator FadeOpacity()
-    {
-        float maxTime = 2f;
-        float time = 0;
-        float a = 1;
-        float r = monsterRenderer.material.color.r;
-        float g = monsterRenderer.material.color.g;
-        float b = monsterRenderer.material.color.b;
-
-        while (time < maxTime)
-        {
-            monsterRenderer.material.color = new Color(r,g,b,a -= (Time.deltaTime / maxTime));
-            time += Time.deltaTime;
-            Debug.Log("Fading Opacity. Time is " + time); 
-            yield return null;
-        }
     }
 
     void Patrol()
