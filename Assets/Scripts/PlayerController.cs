@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class PlayerController : MonoBehaviour
 {
@@ -70,13 +69,6 @@ public class PlayerController : MonoBehaviour
             moveSpeed = walkingSpeed;
             isPlayerSprinting = false;
         }
-
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-            SceneManager.LoadScene("MainMenu");
-        }
     }
 
     private void MovePlayer()
@@ -98,7 +90,7 @@ public class PlayerController : MonoBehaviour
 
     private void MaybePlayWalkingSound()
     {
-        bool isPlayerMoving = Mathf.Abs(rb.velocity.x) > 0.1f || Mathf.Abs(rb.velocity.z) > 0.1f;
+        bool isPlayerMoving = rb.velocity.x > 0.1f || rb.velocity.z > 0.1f;
         if (isPlayerMoving && !isPlayerSprinting && !walkingAudio.isPlaying)
             walkingAudio.Play();
         else if (isPlayerMoving && isPlayerSprinting && !runningAudio.isPlaying)
