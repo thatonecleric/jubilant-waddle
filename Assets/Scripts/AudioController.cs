@@ -3,8 +3,13 @@ using UnityEngine;
 
 public class AudioController : MonoBehaviour
 {
+    public static AudioController instance = null;
+
     public GameObject bgmAmbienceParent;
-    
+
+    private AudioSource currentAmbientMusic;
+    private Coroutine ambientMusicFade = null;
+
     public GameObject sfxWaterWalkingParent;
     public GameObject sfxWaterRunningParent;
 
@@ -34,6 +39,8 @@ public class AudioController : MonoBehaviour
 
     private void Start()
     {
+        instance = this;
+
         // Get all audio sources from parent gameobjects.
         bgmAmbience = bgmAmbienceParent.GetComponents<AudioSource>();
 
@@ -43,7 +50,7 @@ public class AudioController : MonoBehaviour
         playerStoneWalkingSources = sfxStoneWalkingParent.GetComponents<AudioSource>();
         playerStoneRunningSources = sfxStoneRunningParent.GetComponents<AudioSource>();
 
-        PlayRandomSound(bgmAmbience, Settings.BGMVolume);
+        currentAmbientMusic = PlayRandomSound(bgmAmbience, Settings.BGMVolume);
     }
 
     void Update()
@@ -177,6 +184,16 @@ public class AudioController : MonoBehaviour
         return variations[variantIdx];
     }
 
+    public void RequestAmbienceStop(float fadeOutTime = 0f)
+    {
+        // Execute any additional logic needed here before stopping the current BGM.
+        // Note: This could get called multiple times.
+
+        // Fade out music.
+        if (ambientMusicFade == null)
+            ambientMusicFade = StartCoroutine(FadeOutAmbientMusic(currentAmbientMusic, fadeOutTime));
+    }
+
     IEnumerator FadeWalkingAudioIn(AudioSource audio, float totalFadeTime)
     {
         float t = 0;
@@ -223,5 +240,25 @@ public class AudioController : MonoBehaviour
             yield return null;
         }
         waterRunningAudioFade = null;
+    }
+
+    IEnumerator FadeOutAmbientMusic(AudioSource audio, float totalFadeTime)
+    {
+        if (totalFadeTime == 0)
+        {
+            audio.volume = 0f;
+        }
+        else
+        {
+            float t = 0;
+            while (t < Settings.BGMVolume)
+            {
+                t += Time.deltaTime;
+                audio.volume -= (Time.deltaTime / totalFadeTime);
+                yield return null;
+            }
+        }
+        audio.Stop();
+        ambientMusicFade = null;
     }
 }
