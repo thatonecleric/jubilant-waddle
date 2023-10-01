@@ -16,7 +16,6 @@ public class OnButtonHover : MonoBehaviour
 
     private void Start()
     {
-        currentlySelectedButton = "";
         originalColor = text.color;
         buttons.Add(gameObject);
     }
