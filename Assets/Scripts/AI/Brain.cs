@@ -47,9 +47,17 @@ public class Brain : MonoBehaviour
     private bool hasMonsterBeenSeenBefore = false;
     private bool hasMonsterBeenSeenBefore2 = false;
 
+    public AudioSource[] stalkAmbience;
+    private Coroutine ambientMonsterNoiseCoroutine = null;
+
+    private float timeLeftToPursuitMax = 10f;
+    private float timeLeftToPursuit;
+
     void Start()
     {
         monsterAgent = GetComponent<NavMeshAgent>();
+
+        timeLeftToPursuit = timeLeftToPursuitMax;
 
         // Get all patrol points from parent enemy patrol object.
         patrolPoints = new List<Transform>();
@@ -175,6 +183,16 @@ public class Brain : MonoBehaviour
 
             // Transition to Paranoia Phase
             phase = Phase.Paranoia;
+            return;
+        }
+
+        if (isMonsterSeen && hasMonsterBeenSeenBefore && !isRunningAwayFromPlayer && !hasMonsterBeenSeenBefore2)
+        {
+            hasMonsterBeenSeenBefore2 = true;
+
+            // Play a loud violin noise, fade the monster into the wall.
+
+            isFadingIntoWall = true;
         }
     }
 
@@ -245,14 +263,18 @@ public class Brain : MonoBehaviour
         float r = monsterRenderer.material.color.r;
         float g = monsterRenderer.material.color.g;
         float b = monsterRenderer.material.color.b;
+        Debug.Log("Fading Opacity.");
 
         while (time < maxTime)
         {
             monsterRenderer.material.color = new Color(r, g, b, a -= (Time.deltaTime / maxTime));
             time += Time.deltaTime;
-            Debug.Log("Fading Opacity. Time is " + time);
             yield return null;
         }
+        monsterRenderer.material.color = new Color(r, g, b, 0);
+        phase = Phase.Stalk;
+        isFadingIntoWall = false;
+        fadeIntoWallCoroutine = null;
     }
 
     void Patrol()
@@ -330,11 +352,52 @@ public class Brain : MonoBehaviour
     }
     void Stalk()
     {
+        Debug.Log("Stalking.");
+        if (FlashlightController.instance.isFlashlightOn)
+        {
+            // Regenerate Sanity 3x faster then you lose it.
+            if (timeLeftToPursuit + Time.deltaTime < timeLeftToPursuitMax)
+                timeLeftToPursuit += Time.deltaTime * 3f;
 
+            if (ambientMonsterNoiseCoroutine == null)
+                ambientMonsterNoiseCoroutine = StartCoroutine(MaybePlayAmbientMonsterNoises());
+            return;
+        }
+
+        // If the player is off, we stop playing random ambient noises.
+        if (ambientMonsterNoiseCoroutine != null)
+            StopCoroutine(ambientMonsterNoiseCoroutine);
+
+        // Flashlight is off, start counting down the time.
+        if (timeLeftToPursuit <= 0f)
+        {
+            AudioController.instance.RequestAmbienceStop(2.5f);
+            Debug.Log("Pursuing Player.");
+            phase = Phase.Pursuit;
+        }
+        else
+        {
+            timeLeftToPursuit -= Time.deltaTime;
+            Debug.Log("Current time left to pursuit: " + timeLeftToPursuit);
+        }
     }
+
+    IEnumerator MaybePlayAmbientMonsterNoises()
+    {
+        while (true)
+        {
+            // Play an random ambient noise while the flashlight is on, approximately once a minute.
+            if (Random.Range(0, 5) == 0)
+            {
+                stalkAmbience[Random.Range(0, stalkAmbience.Length - 1)].Play();
+            }
+            yield return new WaitForSecondsRealtime(10);
+        }
+    }
+
     void Pursuit()
     {
-
+        //Debug.Log("In Pursuit Phase");
     }
     void CooldownPhase()
     {
