@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
+    public Vector3 screenPosition;
     public float sensX;
     public float sensY;
 
@@ -20,6 +21,7 @@ public class PlayerCamera : MonoBehaviour
 
     private void Update()
     {
+        screenPosition = Input.mousePosition;
         float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime * sensX;
         float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime * sensY;
 
