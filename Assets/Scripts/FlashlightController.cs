@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class FlashlightController : MonoBehaviour
 {
-    public static FlashlightController instance = null;
-
     public bool isFlashlightOn = false;
     private Light flashlight;
 
@@ -14,7 +12,6 @@ public class FlashlightController : MonoBehaviour
 
     void Start()
     {
-        instance = this;
         flashlight = GetComponent<Light>();
     }
 
