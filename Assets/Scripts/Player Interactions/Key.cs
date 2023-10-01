@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class Key : MonoBehaviour, IInteractable
 {
-    [SerializeField] private string _prompt;
-    public string InteractionPrompt => _prompt;
     public bool Interact(Interactor interactor)
     {
         var inventory = interactor.GetComponent<Inventory>();
@@ -17,5 +15,10 @@ public class Key : MonoBehaviour, IInteractable
 
         Debug.Log("Taking key");
         return true;
+    }
+    
+    public GameObject GetGameObject()
+    {
+           return gameObject;
     }
 }

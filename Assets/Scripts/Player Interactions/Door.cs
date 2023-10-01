@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class Door : MonoBehaviour, IInteractable
 {
-    [SerializeField] private string _prompt;
-    public string InteractionPrompt => _prompt;
     public bool isOpen = false;
     public bool Interact(Interactor interactor)
     {
@@ -18,10 +16,16 @@ public class Door : MonoBehaviour, IInteractable
         {
             Debug.Log("Opening door");
             isOpen = true;
+            inventory.HasKey = false;
             return true;
         }
         
         Debug.Log("You need a key");
         return false;
+    }
+
+    public GameObject GetGameObject()
+    {
+           return gameObject;
     }
 }
