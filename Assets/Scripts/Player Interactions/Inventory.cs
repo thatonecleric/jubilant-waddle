@@ -11,5 +11,6 @@ public class Inventory : MonoBehaviour
     public void Update()
     {
         if (Input.GetKey(KeyCode.Q)) HasKey = false; // Reset key for testing
+        KeyIcon.color = HasKey ? new Color32(56, 56, 56, 255) : new Color32(56, 56, 56, 50);
     }
 }
