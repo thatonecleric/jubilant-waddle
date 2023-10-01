@@ -11,6 +11,9 @@ public class FlashlightController : MonoBehaviour
     public float batteryDrainAmount = 0.2f;
     public float remainingBattery = 10f;
 
+    public AudioSource flashlightOnSFX;
+    public AudioSource flashlightOffSFX;
+
     void Start()
     {
         instance = this;
@@ -36,6 +39,8 @@ public class FlashlightController : MonoBehaviour
         {
             isFlashlightOn = !isFlashlightOn;
             flashlight.enabled = isFlashlightOn;
+
+            (isFlashlightOn ? flashlightOnSFX : flashlightOffSFX).Play();
         }
     }
 
