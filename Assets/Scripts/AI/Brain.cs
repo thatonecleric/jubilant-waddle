@@ -17,14 +17,18 @@ public class Brain : MonoBehaviour
 {
     public Camera playerCamera;
     public Transform player;
-    public NavMeshObstacle playerObstacle;
-    private NavMeshAgent monster;
+    private NavMeshAgent monsterAgent;
 
     public GameObject enemyPatrol;
+    public GameObject enemyParanoia;
     private List<Transform> patrolPoints;
+    private List<Transform> paranoiaPoints;
 
     public float MaxViewDistanceWithFlashlight = 8.5f;
     public float MaxViewDistanceWithoutFlashlight = 2.5f;
+
+    public float defaultSpeed = 3f;
+    public float defaultAcceleration = 8f;
 
     private float maxViewDistance = 5f;
 
@@ -33,23 +37,26 @@ public class Brain : MonoBehaviour
 
     private bool isMonsterWaiting = false;
     private bool isMonsterSeen = false;
+    private bool paranoiaSet = false;
 
     private bool isRunningAwayFromPlayer = false;
-    private bool isAttackingPlayer = false;
 
     private bool hasMonsterBeenSeenBefore = false;
 
     void Start()
     {
-        monster = GetComponent<NavMeshAgent>();
+        monsterAgent = GetComponent<NavMeshAgent>();
 
         // Get all patrol points from parent enemy patrol object.
         patrolPoints = new List<Transform>();
+        paranoiaPoints = new List<Transform>();
         foreach (Transform destination in enemyPatrol.transform)
             patrolPoints.Add(destination);
+        foreach (Transform destination in enemyParanoia.transform)
+            paranoiaPoints.Add(destination);
 
         phase = Phase.Patrol;
-        monster.destination = patrolPoints[0].position;
+        monsterAgent.destination = patrolPoints[0].position;
     }
 
     // 5 Phases
@@ -103,26 +110,20 @@ public class Brain : MonoBehaviour
             float currentViewDistance = FlashlightController.instance.isFlashlightOn ? MaxViewDistanceWithFlashlight : MaxViewDistanceWithoutFlashlight;
             if (!PerformSeenCheck(currentViewDistance + 4f))
             {
-                monster.ResetPath();
-                playerObstacle.enabled = false;
+                monsterAgent.ResetPath();
                 isRunningAwayFromPlayer = false;
+
+                monsterAgent.enabled = false;
+                monsterAgent.speed = defaultSpeed;
+                monsterAgent.acceleration = defaultAcceleration;
+                monsterAgent.velocity = Vector3.zero;
+
                 Debug.Log("No longer seen, no longer running away.");
                 return;
             }
 
-            if (monster.remainingDistance <= monster.stoppingDistance + 0.1f)
+            if (monsterAgent.remainingDistance <= monsterAgent.stoppingDistance + 0.1f)
                 RunAwayOrAttackPlayer();
-            return;
-        }
-
-        if (isAttackingPlayer)
-        {
-            if (monster.remainingDistance <= monster.stoppingDistance + 0.1f)
-            {
-                monster.ResetPath();
-                isAttackingPlayer = false;
-            }
-
             return;
         }
 
@@ -157,7 +158,7 @@ public class Brain : MonoBehaviour
             hasMonsterBeenSeenBefore = true;
             
             // Stop the monster
-            monster.destination = transform.position;
+            monsterAgent.destination = transform.position;
 
             RunAwayOrAttackPlayer();
 
@@ -172,57 +173,64 @@ public class Brain : MonoBehaviour
         Vector3 viewPos = playerCamera.WorldToViewportPoint(gameObject.transform.position);
         bool isInViewport = viewPos.x >= 0.1f && viewPos.x <= 0.9f && viewPos.y >= 0.1f && viewPos.y <= 0.9f && viewPos.z > 0.1f;
 
+        Vector3[] directions = {
+            (gameObject.transform.position - new Vector3(-0.8f, 1f, -0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(-0.8f, 1f, 0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(0.8f, 1f, -0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(0.8f, 1f, 0.8f) - playerCamera.transform.position).normalized,
+
+            (gameObject.transform.position - new Vector3(-0.8f, -1f, -0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(-0.8f, -1f, 0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(0.8f, -1f, -0.8f) - playerCamera.transform.position).normalized,
+            (gameObject.transform.position - new Vector3(0.8f, -1f, 0.8f) - playerCamera.transform.position).normalized,
+        };
+
         // Perform the raycast
         RaycastHit hitInfo;
-        Vector3 direction = (gameObject.transform.position - playerCamera.transform.position).normalized;
 
         bool debug = false;
         if (debug)
         {
-            Debug.DrawRay(playerCamera.transform.position, direction * maxViewDistance, Color.red, 0.1f);
-            Debug.Log(isMonsterSeen ? "Player can see enemy." : "Player CANNOT see enemy.");
+            foreach (Vector3 dir in directions)
+                Debug.DrawRay(playerCamera.transform.position, dir * maxViewDistance, Color.red, 0.1f);
         }
 
         // Seen Check
-        return
-            isInViewport &&
-            Physics.Raycast(playerCamera.transform.position, direction, out hitInfo, maxViewDistance) &&
-            hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("Enemy");
+        if (isInViewport)
+        {
+            foreach (Vector3 dir in directions)
+            {
+                if (Physics.Raycast(playerCamera.transform.position, dir, out hitInfo, maxViewDistance)
+                    && hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("Enemy"))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     // Navigate Monster to nearest patrol point which is out of sight from the player.
     void RunAwayOrAttackPlayer()
     {
         // Make it sprint away
-        monster.speed = 50f;
+        monsterAgent.speed = 50f;
+        monsterAgent.acceleration = 16f;
 
         // Sort by ascending order of patrol points
         SortPatrolPoints();
 
         // Set the destination to be the farthest point away from the player.
-        bool isValidPathForRunningAway = monster.SetDestination(patrolPoints[patrolPoints.Count - 1].position);
-        if (!isValidPathForRunningAway)
-        {
-            isRunningAwayFromPlayer = false;
-            isAttackingPlayer = true;
+        monsterAgent.SetDestination(patrolPoints[patrolPoints.Count - 1].position);
+        isRunningAwayFromPlayer = true;
 
-            playerObstacle.enabled = false;
-            monster.destination = player.transform.position;
-        }
-        else
-        {
-            isRunningAwayFromPlayer = true;
-            isAttackingPlayer = false;
-
-            // Enable player as an obstacle
-            playerObstacle.enabled = true;
-        }
+        Debug.Log("Running Away.");
     }
 
     void Patrol()
     {
         // Bounds Check
-        if (monster.remainingDistance <= monster.stoppingDistance + 0.1f)
+        if (monsterAgent.remainingDistance <= monsterAgent.stoppingDistance + 0.1f)
         {
             PickNextPatrolDestination();
         }
@@ -249,12 +257,12 @@ public class Brain : MonoBehaviour
         if (Random.Range(1, 10) == 1)
         {
             isMonsterWaiting = true;
-            newDestination = monster.destination;
+            newDestination = monsterAgent.destination;
             StartCoroutine(PatrolWait());
         }
 
-        monster.SetDestination(newDestination);
-        Debug.Log(monster.destination == newDestination ? "Staying in the same place." : "Moving to new position.");
+        monsterAgent.SetDestination(newDestination);
+        Debug.Log(monsterAgent.destination == newDestination ? "Staying in the same place." : "Moving to new position.");
     }
 
     IEnumerator PatrolWait()
@@ -283,7 +291,14 @@ public class Brain : MonoBehaviour
 
     void Paranoia()
     {
-        Debug.Log("In paranoid phase...");
+        if (!paranoiaSet)
+        {
+            int randomParanoiaPoint = Random.Range(0, paranoiaPoints.Count - 1);
+            transform.position = paranoiaPoints[randomParanoiaPoint].transform.position;
+            paranoiaSet = true;
+            Debug.Log("Paranoia Set to: ");
+            Debug.Log(paranoiaPoints[randomParanoiaPoint].transform.position);
+        }
     }
     void Stalk()
     {
