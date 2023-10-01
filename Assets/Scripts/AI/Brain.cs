@@ -3,14 +3,46 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+public enum Phase
+{
+    Patrol,
+    Paranoia,
+    Stalk,
+    Pursuit,
+    Cooldown
+}
+
 public class Brain : MonoBehaviour
 {
+    public Camera playerCamera;
     public Transform player;
     private NavMeshAgent monster;
+
+    public GameObject enemyPatrol;
+    private List<Transform> patrolPoints;
+
+    public float MaxViewDistanceWithFlashlight = 8.5f;
+    public float MaxViewDistanceWithoutFlashlight = 2.5f;
+
+    private float maxViewDistance = 5f;
+
+    [SerializeField]
+    private Phase phase;
+
+    private bool isMonsterWaiting = false;
+    private bool isMonsterSeen = false;
 
     void Start()
     {
         monster = GetComponent<NavMeshAgent>();
+
+        // Get all patrol points from parent enemy patrol object.
+        patrolPoints = new List<Transform>();
+        foreach (Transform destination in enemyPatrol.transform)
+            patrolPoints.Add(destination);
+
+        phase = Phase.Patrol;
+        monster.destination = patrolPoints[0].position;
     }
 
     // 5 Phases
@@ -53,6 +85,136 @@ public class Brain : MonoBehaviour
 
     void Update()
     {
-        monster.destination = player.position;
+        UpdatePhase();
+        PerformPhase();
+        UpdateEnemySeen();
+    }
+
+    void UpdatePhase()
+    {
+        // TODO.
+    }
+
+    void PerformPhase()
+    {
+        switch (phase)
+        {
+            case Phase.Patrol:
+                Patrol();
+                break;
+            case Phase.Paranoia:
+                Paranoia();
+                break;
+            case Phase.Stalk:
+                Stalk();
+                break;
+            case Phase.Pursuit:
+                Pursuit();
+                break;
+            case Phase.Cooldown:
+                CooldownPhase();
+                break;
+            default:
+                break;
+        }
+    }
+
+    void UpdateEnemySeen()
+    {
+        // Viewport Check
+        Vector3 viewPos = playerCamera.WorldToViewportPoint(gameObject.transform.position);
+        bool isInViewport = viewPos.x >= 0.1f && viewPos.x <= 0.9f && viewPos.y >= 0.1f && viewPos.y <= 0.9f && viewPos.z > 0.1f;
+
+        // Perform the raycast
+        RaycastHit hitInfo;
+        Vector3 direction = (gameObject.transform.position - playerCamera.transform.position).normalized;
+        float maxViewDistance = FlashlightController.instance.isFlashlightOn ? MaxViewDistanceWithFlashlight : MaxViewDistanceWithoutFlashlight;
+
+        // Seen Check
+        isMonsterSeen =
+            isInViewport &&
+            Physics.Raycast(playerCamera.transform.position, direction, out hitInfo, maxViewDistance) &&
+            hitInfo.collider.gameObject.layer == LayerMask.NameToLayer("Enemy");
+
+        bool debug = false;
+        if (debug)
+        {
+            Debug.DrawRay(playerCamera.transform.position, direction * maxViewDistance, Color.red, 0.1f);
+            Debug.Log(isMonsterSeen ? "Player can see enemy." : "Player CANNOT see enemy.");
+        }
+    }
+
+    void Patrol()
+    {
+        // Bounds Check
+        if (monster.remainingDistance <= monster.stoppingDistance + 0.1f)
+        {
+            PickNextPatrolDestination();
+        }
+    }
+
+    // Picks a new patrol point based on the 
+    private void PickNextPatrolDestination()
+    {
+        if (isMonsterWaiting) return;
+
+        patrolPoints.Sort((a, b) =>
+        {
+            float distance1 = Vector3.Distance(a.position, gameObject.transform.position);
+            float distance2 = Vector3.Distance(b.position, gameObject.transform.position);
+
+            if (distance1 < distance2)
+                return -1;
+            else if (distance1 > distance2)
+                return 1;
+            else
+                return 0;
+        });
+
+        // 70% of the time, we pick the next closest point.
+        Vector3 newDestination = patrolPoints[Random.Range(0, 4)].position;
+
+        // But 20% of the time, we pick a new destination really far away from the enemy.
+        if (Random.Range(1, 10) <= 2)
+        {
+            newDestination = patrolPoints[Random.Range(patrolPoints.Count - 5, patrolPoints.Count - 1)].position;
+            Debug.Log("Moving to FARAWAY position.");
+        }
+
+        // 10% of the time, we tell the monster to wait in a position for 5 seconds.
+        if (Random.Range(1, 10) == 1)
+        {
+            isMonsterWaiting = true;
+            newDestination = monster.destination;
+            StartCoroutine(PatrolWait());
+        }
+
+        monster.SetDestination(newDestination);
+        Debug.Log(monster.destination == newDestination ? "Staying in the same place." : "Moving to new position.");
+    }
+
+    IEnumerator PatrolWait()
+    {
+        int randomWaitTime = Random.Range(2, 6);
+        Debug.Log("Waiting for " + " seconds.");
+        yield return new WaitForSecondsRealtime(randomWaitTime);
+        isMonsterWaiting = false;
+    }
+
+    void Paranoia()
+    {
+
+    }
+    void Stalk()
+    {
+
+    }
+    void Pursuit()
+    {
+
+    }
+    void CooldownPhase()
+    {
+
     }
 }
