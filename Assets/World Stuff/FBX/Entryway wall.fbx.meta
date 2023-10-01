@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7e51c0b8039bffc4093fd00895264de0
+guid: 5fcdd12f2436bb7438f7850ea473ad5e
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -7,8 +7,8 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Column
-    second: {fileID: 2100000, guid: 2e00e0b4d0536714d9fc6240086f12e9, type: 2}
+      name: M_Wall
+    second: {fileID: 2100000, guid: 24d9ac197c79a0242a97fa75aa22566f, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -40,7 +40,7 @@ ModelImporter:
     isReadable: 0
   meshes:
     lODScreenPercentages: []
-    globalScale: 500
+    globalScale: 30
     meshCompression: 0
     addColliders: 0
     useSRGBMaterialColor: 1
@@ -95,7 +95,7 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 500
+    globalScale: 0.29999998
     rootMotionBoneName: 
     hasTranslationDoF: 0
     hasExtraRoot: 0
