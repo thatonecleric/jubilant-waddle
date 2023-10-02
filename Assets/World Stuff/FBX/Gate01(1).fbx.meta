@@ -3,7 +3,12 @@ guid: 612db454b6b5faa4ea5c9c26b2839c63
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Fencegate
+    second: {fileID: 2100000, guid: 30ade4e6de57da446aae745d79528c2b, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
