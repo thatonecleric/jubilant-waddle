@@ -6,9 +6,20 @@ public class AudioController : MonoBehaviour
     public static AudioController instance = null;
 
     public GameObject bgmAmbienceParent;
+    private AudioSource[] bgmAmbience;
 
     private AudioSource currentAmbientMusic;
     private Coroutine ambientMusicFade = null;
+
+    public AudioSource pursuitMusic;
+    private Coroutine pursuitMusicFadeIn = null;
+
+
+    public GameObject playerBeingAttackedParent;
+    private AudioSource[] playerBeingAttackedSources;
+
+    public AudioSource playerBreathingLongSource;
+    private Coroutine playerBreathingLongFadeOut = null;
 
     public GameObject sfxWaterWalkingParent;
     public GameObject sfxWaterRunningParent;
@@ -16,13 +27,13 @@ public class AudioController : MonoBehaviour
     public GameObject sfxStoneWalkingParent;
     public GameObject sfxStoneRunningParent;
 
-    private AudioSource[] bgmAmbience;
 
     private AudioSource[] playerStoneWalkingSources;
     private AudioSource[] playerWaterWalkingSources;
 
     private AudioSource[] playerStoneRunningSources;
     private AudioSource[] playerWaterRunningSources;
+
 
     private bool isStoneWalkingAudioPlaying = false;
     private Coroutine stoneWalkingAudioFade = null;
@@ -43,6 +54,7 @@ public class AudioController : MonoBehaviour
 
         // Get all audio sources from parent gameobjects.
         bgmAmbience = bgmAmbienceParent.GetComponents<AudioSource>();
+        playerBeingAttackedSources = playerBeingAttackedParent.GetComponents<AudioSource>();
 
         playerWaterWalkingSources = sfxWaterWalkingParent.GetComponents<AudioSource>();
         playerWaterRunningSources = sfxWaterRunningParent.GetComponents<AudioSource>();
@@ -114,7 +126,7 @@ public class AudioController : MonoBehaviour
                 isWaterWalkingAudioPlaying = false;
             }
         }
-        
+
         // Stop stone running sounds immediately if the player is no longer on stone.
         if (isPlayerInWater && isStoneRunningAudioPlaying)
         {
@@ -194,6 +206,35 @@ public class AudioController : MonoBehaviour
             ambientMusicFade = StartCoroutine(FadeOutAmbientMusic(currentAmbientMusic, fadeOutTime));
     }
 
+    public void RequestPursuitStart(float fadeInTime = 0f)
+    {
+        // Execute any additional logic needed here before stopping the current BGM.
+        // Note: This could get called multiple times.
+
+        // Fade in music.
+        pursuitMusic.volume = 0;
+        pursuitMusic.Play();
+        if (pursuitMusicFadeIn == null)
+            pursuitMusicFadeIn = StartCoroutine(FadeInPursuitMusic(pursuitMusic, fadeInTime));
+    }
+
+    public void RequestPlayerBreathingLongStart()
+    {
+        if (!playerBreathingLongSource.isPlaying)
+            playerBreathingLongSource.Play();
+    }
+
+    public void RequestPlayerBreathingLongStop(float fadeOutTime = 0f)
+    {
+        if (playerBreathingLongFadeOut == null)
+            playerBreathingLongFadeOut = StartCoroutine(FadeOutBreathingLong(playerBreathingLongSource, fadeOutTime));
+    }
+
+    public void RequestPlayerHitSound()
+    {
+        playerBeingAttackedSources[Random.Range(0, playerBeingAttackedSources.Length - 1)].Play();
+    }
+
     IEnumerator FadeWalkingAudioIn(AudioSource audio, float totalFadeTime)
     {
         float t = 0;
@@ -252,6 +293,45 @@ public class AudioController : MonoBehaviour
         {
             float t = 0;
             while (t < Settings.BGMVolume)
+            {
+                t += Time.deltaTime;
+                audio.volume -= (Time.deltaTime / totalFadeTime);
+                yield return null;
+            }
+        }
+        audio.Stop();
+        ambientMusicFade = null;
+    }
+
+    IEnumerator FadeInPursuitMusic(AudioSource audio, float totalFadeTime)
+    {
+        if (totalFadeTime == 0)
+        {
+            audio.volume = Settings.BGMVolume;
+        }
+        else
+        {
+            float t = 0;
+            while (t < Settings.BGMVolume)
+            {
+                t += Time.deltaTime;
+                audio.volume += (Time.deltaTime / totalFadeTime);
+                yield return null;
+            }
+        }
+        pursuitMusicFadeIn = null;
+    }
+
+    IEnumerator FadeOutBreathingLong(AudioSource audio, float totalFadeTime)
+    {
+        if (totalFadeTime == 0)
+        {
+            audio.volume = 0f;
+        }
+        else
+        {
+            float t = 0;
+            while (t < Settings.SFXVolume)
             {
                 t += Time.deltaTime;
                 audio.volume -= (Time.deltaTime / totalFadeTime);
