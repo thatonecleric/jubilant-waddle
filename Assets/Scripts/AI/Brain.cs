@@ -13,6 +13,13 @@ public enum Phase
     Cooldown
 }
 
+public enum CooldownReason
+{
+    None,
+    LostPlayerAfterPursuit,
+    SuccessfullyAttackedPlayer,
+}
+
 public class Brain : MonoBehaviour
 {
     public Camera playerCamera;
@@ -47,15 +54,36 @@ public class Brain : MonoBehaviour
     private bool hasMonsterBeenSeenBefore = false;
     private bool hasMonsterBeenSeenBefore2 = false;
 
-    public AudioSource[] stalkAmbience;
+    public GameObject stalkAmbienceObject;
+    private AudioSource[] stalkAmbience;
     private Coroutine ambientMonsterNoiseCoroutine = null;
+
+    public GameObject farScreamObject;
+    private AudioSource[] farScreamSources;
+
+    public GameObject closeScreamObject;
+    private AudioSource[] closeScreamSources;
+
+    public AudioSource monsterPresence;
+
 
     private float timeLeftToPursuitMax = 10f;
     private float timeLeftToPursuit;
 
+    private bool hasPursuitStarted = false;
+    private bool hasFoundPlayerInPursuit = false;
+    private float currentPursuitTime = 0f;
+    private CooldownReason latestCooldownReason = CooldownReason.None;
+
+    private Coroutine cooldownStarted = null;
+
     void Start()
     {
         monsterAgent = GetComponent<NavMeshAgent>();
+
+        stalkAmbience = stalkAmbienceObject.GetComponents<AudioSource>();
+        farScreamSources = farScreamObject.GetComponents<AudioSource>();
+        closeScreamSources = closeScreamObject.GetComponents<AudioSource>();
 
         timeLeftToPursuit = timeLeftToPursuitMax;
 
@@ -69,6 +97,7 @@ public class Brain : MonoBehaviour
 
         phase = Phase.Patrol;
         monsterAgent.destination = patrolPoints[0].position;
+        monsterPresence.Play();
     }
 
     // 5 Phases
@@ -130,6 +159,8 @@ public class Brain : MonoBehaviour
                 monsterAgent.acceleration = defaultAcceleration;
                 monsterAgent.velocity = Vector3.zero;
 
+                monsterPresence.Stop();
+
                 Debug.Log("No longer seen, no longer running away.");
                 return;
             }
@@ -176,7 +207,7 @@ public class Brain : MonoBehaviour
         {
             hasMonsterBeenSeenBefore = true;
             
-            // Stop the monster
+            // Stop the monsterf
             monsterAgent.destination = transform.position;
 
             RunAwayFromPlayer();
@@ -191,6 +222,7 @@ public class Brain : MonoBehaviour
             hasMonsterBeenSeenBefore2 = true;
 
             // Play a loud violin noise, fade the monster into the wall.
+            closeScreamSources[Random.Range(0, closeScreamSources.Length - 1)].Play();
 
             isFadingIntoWall = true;
         }
@@ -272,6 +304,7 @@ public class Brain : MonoBehaviour
             yield return null;
         }
         monsterRenderer.material.color = new Color(r, g, b, 0);
+        transform.position = new Vector3(0, -1000000, 0);
         phase = Phase.Stalk;
         isFadingIntoWall = false;
         fadeIntoWallCoroutine = null;
@@ -339,6 +372,22 @@ public class Brain : MonoBehaviour
         });
     }
 
+    void SortPoints(List<Transform> points, Vector3 startingPosition)
+    {
+        points.Sort((a, b) =>
+        {
+            float distance1 = Vector3.Distance(a.position, startingPosition);
+            float distance2 = Vector3.Distance(b.position, startingPosition);
+
+            if (distance1 < distance2)
+                return -1;
+            else if (distance1 > distance2)
+                return 1;
+            else
+                return 0;
+        });
+    }
+
     void Paranoia()
     {
         if (!paranoiaSet)
@@ -371,9 +420,10 @@ public class Brain : MonoBehaviour
         // Flashlight is off, start counting down the time.
         if (timeLeftToPursuit <= 0f)
         {
-            AudioController.instance.RequestAmbienceStop(2.5f);
+            AudioController.instance.RequestAmbienceStop(5f);
             Debug.Log("Pursuing Player.");
             phase = Phase.Pursuit;
+            timeLeftToPursuit = timeLeftToPursuitMax;
         }
         else
         {
@@ -397,10 +447,174 @@ public class Brain : MonoBehaviour
 
     void Pursuit()
     {
-        //Debug.Log("In Pursuit Phase");
+        // Reset the material color if transparent.
+        if (monsterRenderer.material.color.a == 0)
+        {
+            monsterRenderer.material.color = new Color(
+               monsterRenderer.material.color.r,
+               monsterRenderer.material.color.g,
+               monsterRenderer.material.color.b,
+               1f);
+        }
+
+        // Start the presence audio.
+        if (!hasPursuitStarted)
+        {
+            monsterPresence.Play();
+
+            // Play Blood Curdling Scream to let the player know to ... RUN.
+            farScreamSources[Random.Range(0, farScreamSources.Length - 1)].Play();
+
+            // Request Pursuit BGM.
+            AudioController.instance.RequestPursuitStart(2f);
+
+            // Request the player to start heavily breathing.
+            AudioController.instance.RequestPlayerBreathingLongStart();
+
+            // Spawn Monster.
+            if (!monsterAgent.enabled)
+                SpawnInMonsterForPursuit();
+
+            hasPursuitStarted = true;
+        }
+
+        float remainingMonsterDistance = GetPathRemainingDistance();
+
+        // Check if monster has found player yet
+        if (!monsterAgent.pathPending && remainingMonsterDistance < MaxViewDistanceWithFlashlight)
+        {
+            hasFoundPlayerInPursuit = true;
+
+            // We don't want the chase to end if the monster is about to
+            // catch the player. Therefore if the monster is within 8.5f of
+            // the player, reset the pursuit time to 15 seconds until
+            // they are out of the range.
+            if (currentPursuitTime < 15f)
+                currentPursuitTime = 15f;
+        }
+
+        // Attack if the monster catches up to the player
+        if (!monsterAgent.pathPending && remainingMonsterDistance < 1f)
+        {
+            // Play Attack Sound
+            Debug.Log("Attacking player and playing sound.");
+            AudioController.instance.RequestPlayerHitSound();
+
+            // Run away after attacking.
+            Debug.Log("Running away after attacking.");
+            AudioController.instance.RequestPlayerBreathingLongStop(1.5f);
+            latestCooldownReason = CooldownReason.SuccessfullyAttackedPlayer;
+            phase = Phase.Cooldown;
+            return;
+        }
+
+        // Run away if the monster is too far away from the player after catching up with them once.
+        if (hasFoundPlayerInPursuit)
+        {
+            if (!monsterAgent.pathPending && remainingMonsterDistance > 20f)
+            {
+                Debug.Log("Running away after losing player.");
+                AudioController.instance.RequestPlayerBreathingLongStop(3f);
+                latestCooldownReason = CooldownReason.LostPlayerAfterPursuit;
+                phase = Phase.Cooldown;
+                return;
+            }
+        }
+
+        if (currentPursuitTime > 30f)
+        {
+            Debug.Log("Pursuit timed out after lasting 30 seconds.");
+            AudioController.instance.RequestPlayerBreathingLongStop(3f);
+            latestCooldownReason = CooldownReason.LostPlayerAfterPursuit;
+            phase = Phase.Cooldown;
+            return;
+        }
+
+        monsterAgent.SetDestination(player.transform.position);
+        currentPursuitTime += Time.deltaTime;
     }
+
+    void SpawnInMonsterForPursuit()
+    {
+        List<Transform> possibleSpawnLocations = new List<Transform>();
+
+        // Filter out all possible spawns based on whether they are in the viewport.
+        Plane[] cameraFrustum = GeometryUtility.CalculateFrustumPlanes(playerCamera);
+        foreach (Transform point in patrolPoints)
+        {
+            Bounds pointBounds = new Bounds(point.position, new Vector3(1, 1, 1));
+            if (!GeometryUtility.TestPlanesAABB(cameraFrustum, pointBounds))
+            {
+                possibleSpawnLocations.Add(point);
+            }
+        }
+
+        // Sort all points by distance from player.
+        SortPoints(possibleSpawnLocations, player.transform.position);
+
+        // Pick the one a middle distance away.
+        if (possibleSpawnLocations.Count > 0)
+        {
+            transform.position = possibleSpawnLocations[(possibleSpawnLocations.Count / 2) - 1].position;
+            monsterAgent.enabled = true;
+            monsterAgent.SetDestination(player.transform.position);
+        }
+        else
+        {
+            Debug.Log("Fatal Error: No Spawn Points for Pursuit Phase.");
+        }
+    }
+
+    private float GetPathRemainingDistance()
+    {
+        if (monsterAgent.pathPending ||
+            monsterAgent.pathStatus == NavMeshPathStatus.PathInvalid ||
+            monsterAgent.path.corners.Length == 0)
+            return -1f;
+
+        float distance = 0.0f;
+        for (int i = 0; i < monsterAgent.path.corners.Length - 1; ++i)
+            distance += Vector3.Distance(monsterAgent.path.corners[i], monsterAgent.path.corners[i + 1]);
+
+        return distance;
+    }
+
     void CooldownPhase()
     {
+        if (cooldownStarted == null)
+        {
+            Debug.Log("In Cooldown Phase");
 
+            // Reset for Stalk Phase
+            hasPursuitStarted = false;
+            hasFoundPlayerInPursuit = false;
+            timeLeftToPursuit = timeLeftToPursuitMax;
+            currentPursuitTime = 0f;
+
+            monsterAgent.enabled = false;
+            monsterAgent.speed = defaultSpeed;
+            monsterAgent.acceleration = defaultAcceleration;
+            monsterAgent.velocity = Vector3.zero;
+
+            transform.position = new Vector3(0, -1000000, 0);
+
+
+            if (latestCooldownReason == CooldownReason.LostPlayerAfterPursuit)
+            {
+                cooldownStarted = StartCoroutine(MonsterCooldown(5));
+            }
+            else if (latestCooldownReason == CooldownReason.SuccessfullyAttackedPlayer)
+            {
+                cooldownStarted = StartCoroutine(MonsterCooldown(10));
+            }
+        }
+    }
+
+    IEnumerator MonsterCooldown(float cooldownTimeSeconds)
+    {
+        yield return new WaitForSeconds(cooldownTimeSeconds);
+        phase = Phase.Stalk;
+        cooldownStarted = null;
+        Debug.Log("Cooldown Phase Ended.");
     }
 }
